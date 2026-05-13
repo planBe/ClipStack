@@ -39,8 +39,8 @@ final class ClipboardManager: ObservableObject {
     private let pollInterval: TimeInterval = 0.5
     private let storageKey = "ClipStack.history.v1"
 
-    // Flag to ignore the next change when *we* write to the pasteboard.
-    private var ignoreNextChange = false
+    // Self-write prevention is handled by syncing lastChangeCount inside
+    // copyToPasteboard — see that method's comment for details.
 
     init() {
         self.lastChangeCount = pasteboard.changeCount
@@ -66,11 +66,6 @@ final class ClipboardManager: ObservableObject {
         let currentCount = pasteboard.changeCount
         guard currentCount != lastChangeCount else { return }
         lastChangeCount = currentCount
-
-        if ignoreNextChange {
-            ignoreNextChange = false
-            return
-        }
 
         // Respect items marked as concealed (e.g. by password managers).
         // See: https://nspasteboard.org
@@ -115,9 +110,11 @@ final class ClipboardManager: ObservableObject {
 
     /// Writes the given item's text back to the pasteboard so the user can paste it.
     func copyToPasteboard(_ item: ClipItem) {
-        ignoreNextChange = true
         pasteboard.clearContents()
         pasteboard.setString(item.text, forType: .string)
+        // Sync lastChangeCount to the post-write value so the next poll's
+        // changeCount comparison short-circuits and we don't re-capture our
+        // own write as a new history item.
         lastChangeCount = pasteboard.changeCount
 
         // Move this item to the top of history without creating a duplicate.
