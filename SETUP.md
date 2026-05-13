@@ -9,7 +9,7 @@ The four Swift/plist files in `ClipStack/` are the entire app. Here's how to get
 3. Fill in:
    - **Product Name:** `ClipStack`
    - **Team:** Your Apple ID (or "None" for local dev — see "Distribution" in README)
-   - **Organization Identifier:** something like `com.yourname` (this becomes the bundle ID prefix)
+   - **Organization Identifier:** `com.planbecreative` (so the bundle ID becomes `com.planbecreative.ClipStack`)
    - **Interface:** SwiftUI
    - **Language:** Swift
    - **Storage:** None
