@@ -44,6 +44,10 @@ Clicking an item in the menu writes it back to the pasteboard so you can paste i
 - [ ] Optional "favorites" that don't get evicted
 - [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask
 
+## Privacy
+
+ClipStack collects no data. Everything runs on your Mac; nothing is sent anywhere. See [PRIVACY.md](PRIVACY.md) for the full policy.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
