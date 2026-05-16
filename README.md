@@ -4,13 +4,14 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 
 ## Status
 
-🚧 **v0.1 — early development.** Core clipboard monitoring and menu bar UI are in place. Global hotkey and richer content types are on the roadmap.
+🚧 **v0.2 — early development.** Core clipboard monitoring, menu bar UI, and launch-at-login are in place. Global hotkey and richer content types are on the roadmap.
 
 ## Features
 
 - 📋 Keeps the last 10 text items you copied or cut
 - 🍎 Lives quietly in the menu bar (no dock icon)
 - 💾 History persists across launches
+- 🚀 Launch at login (toggle from the menu)
 - 🔒 Respects `org.nspasteboard.ConcealedType` (won't capture passwords from password managers that mark them)
 - 🆓 Free and open-source forever (MIT licensed)
 - 🪶 Tiny: no dependencies, pure SwiftUI + AppKit
@@ -34,12 +35,14 @@ ClipStack polls `NSPasteboard.general.changeCount` every 500ms. When the change 
 
 Clicking an item in the menu writes it back to the pasteboard so you can paste it normally with ⌘V.
 
+Launch-at-login is implemented with `SMAppService.mainApp` (macOS 13+) — no helper bundle, no additional entitlements under App Sandbox. The toggle state is also reflected by System Settings → General → Login Items, so changes you make there are picked up the next time you open the ClipStack menu.
+
 ## Roadmap
 
+- [x] Launch at login (via `SMAppService.mainApp`) — shipped in v0.2
 - [ ] Global hotkey (⌘⇧V) to open the menu without the mouse
 - [ ] Support for images and files, not just text
 - [ ] Configurable history size (currently fixed at 10)
-- [ ] Launch at login (via `ServiceManagement`)
 - [ ] Search within history
 - [ ] Optional "favorites" that don't get evicted
 - [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask

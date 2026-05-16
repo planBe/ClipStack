@@ -3,6 +3,7 @@ import SwiftUI
 struct MenuBarContentView: View {
     @EnvironmentObject var clipboardManager: ClipboardManager
     @Environment(\.openURL) private var openURL
+    @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -18,9 +19,16 @@ struct MenuBarContentView: View {
 
             Divider()
 
+            settings
+
+            Divider()
+
             footer
         }
         .frame(width: 360)
+        .onAppear {
+            launchAtLogin.refreshStatus()
+        }
     }
 
     private var header: some View {
@@ -63,7 +71,20 @@ struct MenuBarContentView: View {
                 }
             }
         }
-        .frame(maxHeight: 400)
+        .frame(minHeight: 340, maxHeight: 400)
+    }
+
+    private var settings: some View {
+        Toggle(isOn: Binding(
+            get: { launchAtLogin.isEnabled },
+            set: { _ in launchAtLogin.toggle() }
+        )) {
+            Text("Launch at Login")
+                .font(.caption)
+        }
+        .toggleStyle(.checkbox)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     private var footer: some View {

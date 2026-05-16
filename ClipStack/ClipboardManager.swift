@@ -56,7 +56,7 @@ final class ClipboardManager: ObservableObject {
 
     private func startMonitoring() {
         timer = Timer.scheduledTimer(withTimeInterval: pollInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor in
+            Task { @MainActor [weak self] in
                 self?.checkPasteboard()
             }
         }
