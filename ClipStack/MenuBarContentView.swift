@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarContentView: View {
@@ -132,11 +133,7 @@ struct HistoryRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 20, alignment: .center)
 
-                Text(item.preview)
-                    .font(.body)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                contentView
 
                 if isHovering {
                     Button {
@@ -155,6 +152,86 @@ struct HistoryRow: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovering = $0 }
+    }
+
+    @ViewBuilder
+    private var contentView: some View {
+        switch item.content {
+        case .text(let string):
+            Text(HistoryRow.textPreview(string))
+                .font(.body)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .image(let filename):
+            HStack(spacing: 8) {
+                imageThumbnail(filename: filename)
+                Text("Image")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+        case .file(let path, let name):
+            HStack(spacing: 8) {
+                fileIcon(path: path)
+                Text(name)
+                    .font(.body)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private func fileIcon(path: String) -> some View {
+        if HistoryRow.isImageFile(path: path),
+           let nsImage = NSImage(contentsOf: URL(fileURLWithPath: path)) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .cornerRadius(2)
+        } else {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: path))
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 20, height: 20)
+        }
+    }
+
+    private static func isImageFile(path: String) -> Bool {
+        let ext = (path as NSString).pathExtension.lowercased()
+        return ["png", "jpg", "jpeg", "gif", "tiff", "tif", "bmp", "heic", "webp"].contains(ext)
+    }
+
+    @ViewBuilder
+    private func imageThumbnail(filename: String) -> some View {
+        if let data = clipboardManager.loadImageData(filename: filename),
+           let nsImage = NSImage(data: data) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 24, height: 24)
+                .cornerRadius(2)
+        } else {
+            Image(systemName: "photo")
+                .foregroundStyle(.secondary)
+                .frame(width: 24, height: 24)
+        }
+    }
+
+    private static func textPreview(_ text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let singleLine = trimmed.replacingOccurrences(of: "\n", with: " ")
+        if singleLine.count > 60 {
+            return String(singleLine.prefix(60)) + "…"
+        }
+        return singleLine
     }
 
     private var shortcutLabel: String {
