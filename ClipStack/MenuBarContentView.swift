@@ -313,7 +313,7 @@ struct HistoryRow: View {
 
     @ViewBuilder
     private func fileIcon(path: String) -> some View {
-        if HistoryRow.isImageFile(path: path),
+        if ClipContent.isImageFile(path: path),
            let nsImage = NSImage(contentsOf: URL(fileURLWithPath: path)) {
             Image(nsImage: nsImage)
                 .resizable()
@@ -326,11 +326,6 @@ struct HistoryRow: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 20, height: 20)
         }
-    }
-
-    private static func isImageFile(path: String) -> Bool {
-        let ext = (path as NSString).pathExtension.lowercased()
-        return ["png", "jpg", "jpeg", "gif", "tiff", "tif", "bmp", "heic", "webp"].contains(ext)
     }
 
     @ViewBuilder

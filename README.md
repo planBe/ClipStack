@@ -4,7 +4,7 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 
 ## Status
 
-🚧 **v0.6 — early development.** Core clipboard monitoring, menu bar UI, launch-at-login, image + file support, favorites, configurable history size, global hotkey (⌘⇧V), and search are in place. Notarized release and image-file-as-image-on-round-trip are the remaining roadmap items.
+🚧 **v0.7 — early development, feature-complete for the v0.x roadmap.** Core clipboard monitoring, menu bar UI, launch-at-login, image + file support, favorites, configurable history size, global hotkey (⌘⇧V), search, and image-file-as-image round-trip are all in place. Notarized release is the remaining roadmap item (blocked on the Apple Developer display-name change landing).
 
 ## Features
 
@@ -55,8 +55,8 @@ The global hotkey (⌘⇧V) is registered via Carbon's `RegisterEventHotKey` —
 - [x] Favorites that don't get evicted — shipped in v0.4
 - [x] Global hotkey (⌘⇧V) to open the menu without the mouse — shipped in v0.5
 - [x] Search within history — shipped in v0.6
-- [ ] When an image-file is copied, write both image data and file URL on round-trip so pasting into image-aware apps gets the image (not just the file reference)
-- [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask
+- [x] When an image-file is copied, write both image data and file URL on round-trip — shipped in v0.7
+- [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask (blocked on the Apple Developer display-name change)
 
 ## Privacy
 

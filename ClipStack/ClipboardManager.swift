@@ -14,6 +14,14 @@ enum ClipContent: Codable, Equatable {
     case text(String)
     case image(filename: String)
     case file(path: String, name: String)
+
+    /// Image extensions ClipStack recognizes for both UI thumbnail
+    /// rendering and v0.7's enhanced round-trip behavior (writing image
+    /// data alongside the file URL when a file is an image).
+    static func isImageFile(path: String) -> Bool {
+        let ext = (path as NSString).pathExtension.lowercased()
+        return ["png", "jpg", "jpeg", "gif", "tiff", "tif", "bmp", "heic", "webp"].contains(ext)
+    }
 }
 
 /// Represents a single item in clipboard history.
@@ -241,6 +249,17 @@ final class ClipboardManager: ObservableObject {
             let url = URL(fileURLWithPath: path)
             if FileManager.default.fileExists(atPath: path) {
                 pasteboard.writeObjects([url as NSURL])
+                // v0.7: when the file is an image, also write image bytes
+                // so apps that expect inline data (Pages, Mail, Safari)
+                // paste the image rather than just the file reference.
+                if ClipContent.isImageFile(path: path),
+                   let data = try? Data(contentsOf: url) {
+                    pasteboard.setData(data, forType: .png)
+                    if let nsImage = NSImage(data: data),
+                       let tiff = nsImage.tiffRepresentation {
+                        pasteboard.setData(tiff, forType: .tiff)
+                    }
+                }
             }
             pasteboard.setString(name, forType: .string)
         }
