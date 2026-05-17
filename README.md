@@ -4,11 +4,12 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 
 ## Status
 
-🚧 **v0.4 — early development.** Core clipboard monitoring, menu bar UI, launch-at-login, image + file support, favorites, and configurable history size are in place. Global hotkey and search are on the roadmap.
+🚧 **v0.5 — early development.** Core clipboard monitoring, menu bar UI, launch-at-login, image + file support, favorites, configurable history size, and a global hotkey (⌘⇧V) are in place. Search is on the roadmap.
 
 ## Features
 
 - 📋 Keeps the last N items you copied — text, images, or files (default 10, configurable 5–50)
+- ⌨️ Global hotkey **⌘⇧V** opens the menu from any app — fully keyboard-driven workflow
 - 📌 Pin items as favorites — pinned items never get evicted, even when the cap is exceeded
 - 🖼️ Image previews and file thumbnails in the menu
 - 🍎 Lives quietly in the menu bar (no dock icon)
@@ -43,13 +44,15 @@ Clicking an item in the menu writes it back to the pasteboard. Text writes a str
 
 Launch-at-login is implemented with `SMAppService.mainApp` (macOS 13+) — no helper bundle, no additional entitlements under App Sandbox. The toggle state is also reflected by System Settings → General → Login Items, so changes you make there are picked up the next time you open the ClipStack menu.
 
+The global hotkey (⌘⇧V) is registered via Carbon's `RegisterEventHotKey` — long deprecated but still the only public API that registers a system-wide hotkey without Accessibility permission, which keeps ClipStack sandbox-clean and friction-free for users. The menu bar item is a manual `NSStatusItem` + `NSPopover` (not SwiftUI's `MenuBarExtra`) so the hotkey handler can programmatically open the popover.
+
 ## Roadmap
 
 - [x] Launch at login (via `SMAppService.mainApp`) — shipped in v0.2
 - [x] Support for images and files, not just text — shipped in v0.3
 - [x] Configurable history size — shipped in v0.4
 - [x] Favorites that don't get evicted — shipped in v0.4
-- [ ] Global hotkey (⌘⇧V) to open the menu without the mouse
+- [x] Global hotkey (⌘⇧V) to open the menu without the mouse — shipped in v0.5
 - [ ] Search within history
 - [ ] When an image-file is copied, write both image data and file URL on round-trip so pasting into image-aware apps gets the image (not just the file reference)
 - [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask
