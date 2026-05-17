@@ -21,11 +21,23 @@ struct ClipItem: Identifiable, Codable, Equatable {
     let id: UUID
     let content: ClipContent
     let copiedAt: Date
+    var isPinned: Bool
 
-    init(id: UUID = UUID(), content: ClipContent, copiedAt: Date = Date()) {
+    init(id: UUID = UUID(), content: ClipContent, copiedAt: Date = Date(), isPinned: Bool = false) {
         self.id = id
         self.content = content
         self.copiedAt = copiedAt
+        self.isPinned = isPinned
+    }
+
+    // Custom decoder so v0.3-persisted items (no isPinned field) decode
+    // cleanly with isPinned = false. Avoids bumping the storage key again.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        content = try container.decode(ClipContent.self, forKey: .content)
+        copiedAt = try container.decode(Date.self, forKey: .copiedAt)
+        isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
     }
 }
 
@@ -33,16 +45,19 @@ struct ClipItem: Identifiable, Codable, Equatable {
 @MainActor
 final class ClipboardManager: ObservableObject {
     @Published private(set) var history: [ClipItem] = []
+    @Published private(set) var maxItems: Int = 10
 
     private let pasteboard = NSPasteboard.general
     private var lastChangeCount: Int
     private var timer: Timer?
 
     // Configuration
-    let maxItems = 10
+    let minMaxItems = 5
+    let maxMaxItems = 50
     private let pollInterval: TimeInterval = 0.5
     private let storageKey = "ClipStack.history.v2"
     private let legacyStorageKey = "ClipStack.history.v1"
+    private let maxItemsKey = "ClipStack.maxItems.v1"
     private let maxImageBytes: Int = 5 * 1024 * 1024  // 5 MB cap per image
 
     // Self-write prevention is handled by syncing lastChangeCount inside
@@ -50,6 +65,7 @@ final class ClipboardManager: ObservableObject {
 
     init() {
         self.lastChangeCount = pasteboard.changeCount
+        loadMaxItems()
         loadHistory()
         startMonitoring()
     }
@@ -127,52 +143,80 @@ final class ClipboardManager: ObservableObject {
     // MARK: - History management
 
     private func addText(text: String) {
-        // If this exact text is already at the top, do nothing.
-        if let first = history.first, case .text(let s) = first.content, s == text {
+        // If this exact text is at the top of unpinned, do nothing.
+        let pinnedCount = pinnedSectionCount()
+        if pinnedCount < history.count,
+           case .text(let s) = history[pinnedCount].content, s == text {
             return
         }
 
-        // Remove any existing duplicate so we can move it to the top.
-        history.removeAll { item in
+        // Find existing duplicate and move it (preserving pin state).
+        if let idx = history.firstIndex(where: { item in
             if case .text(let s) = item.content { return s == text }
             return false
+        }) {
+            let existing = history.remove(at: idx)
+            insertAtTopOfSection(existing)
+            saveHistory()
+            return
         }
 
-        insertItem(ClipItem(content: .text(text)))
+        insertNewItem(ClipItem(content: .text(text)))
     }
 
     private func addImage(data: Data) {
         guard data.count <= maxImageBytes else { return }
         guard let filename = saveImageToCache(data) else { return }
-        insertItem(ClipItem(content: .image(filename: filename)))
+        insertNewItem(ClipItem(content: .image(filename: filename)))
     }
 
     private func addFile(url: URL) {
         let path = url.path
         let name = url.lastPathComponent
 
-        // Dedup on path.
-        if let first = history.first, case .file(let p, _) = first.content, p == path {
-            return
-        }
-        history.removeAll { item in
+        // Dedup on path (preserving pin state if duplicate exists).
+        if let idx = history.firstIndex(where: { item in
             if case .file(let p, _) = item.content { return p == path }
             return false
+        }) {
+            let existing = history.remove(at: idx)
+            insertAtTopOfSection(existing)
+            saveHistory()
+            return
         }
 
-        insertItem(ClipItem(content: .file(path: path, name: name)))
+        insertNewItem(ClipItem(content: .file(path: path, name: name)))
     }
 
-    private func insertItem(_ item: ClipItem) {
-        history.insert(item, at: 0)
+    private func insertNewItem(_ item: ClipItem) {
+        // New items are unpinned; they go to the top of the unpinned section.
+        insertAtTopOfSection(item)
         evictExcess()
         saveHistory()
     }
 
+    private func insertAtTopOfSection(_ item: ClipItem) {
+        if item.isPinned {
+            history.insert(item, at: 0)
+        } else {
+            history.insert(item, at: pinnedSectionCount())
+        }
+    }
+
+    private func pinnedSectionCount() -> Int {
+        history.prefix(while: { $0.isPinned }).count
+    }
+
     private func evictExcess() {
-        while history.count > maxItems {
-            let evicted = history.removeLast()
-            deleteContent(of: evicted)
+        var unpinnedCount = history.filter { !$0.isPinned }.count
+        var i = history.count - 1
+        while unpinnedCount > maxItems && i >= 0 {
+            if !history[i].isPinned {
+                let evicted = history.remove(at: i)
+                deleteContent(of: evicted)
+                unpinnedCount -= 1
+            }
+            i -= 1
         }
     }
 
@@ -187,8 +231,6 @@ final class ClipboardManager: ObservableObject {
         case .image(let filename):
             if let data = loadImageData(filename: filename) {
                 pasteboard.setData(data, forType: .png)
-                // Also write TIFF so apps that only accept TIFF (some older
-                // ones) still get the image.
                 if let nsImage = NSImage(data: data),
                    let tiff = nsImage.tiffRepresentation {
                     pasteboard.setData(tiff, forType: .tiff)
@@ -200,8 +242,6 @@ final class ClipboardManager: ObservableObject {
             if FileManager.default.fileExists(atPath: path) {
                 pasteboard.writeObjects([url as NSURL])
             }
-            // Always write the filename as a string fallback so pasting
-            // into a text field gives a meaningful result.
             pasteboard.setString(name, forType: .string)
         }
 
@@ -210,23 +250,47 @@ final class ClipboardManager: ObservableObject {
         // own write as a new history item.
         lastChangeCount = pasteboard.changeCount
 
-        // Move this item to the top of history without creating a duplicate.
+        // Move this item to the top of its section without creating a duplicate.
         history.removeAll { $0.id == item.id }
-        history.insert(item, at: 0)
+        insertAtTopOfSection(item)
         saveHistory()
     }
 
     func clearHistory() {
-        for item in history {
+        // Clear only unpinned items — pinned stay.
+        let toEvict = history.filter { !$0.isPinned }
+        history.removeAll { !$0.isPinned }
+        for item in toEvict {
             deleteContent(of: item)
         }
-        history.removeAll()
         saveHistory()
     }
 
     func remove(_ item: ClipItem) {
         history.removeAll { $0.id == item.id }
         deleteContent(of: item)
+        saveHistory()
+    }
+
+    func togglePin(_ item: ClipItem) {
+        guard let idx = history.firstIndex(where: { $0.id == item.id }) else { return }
+        history[idx].isPinned.toggle()
+
+        let updated = history[idx]
+        history.remove(at: idx)
+        insertAtTopOfSection(updated)
+
+        // Unpinning could push the unpinned section over the cap.
+        evictExcess()
+        saveHistory()
+    }
+
+    func setMaxItems(_ newValue: Int) {
+        let clamped = min(max(newValue, minMaxItems), maxMaxItems)
+        guard clamped != maxItems else { return }
+        maxItems = clamped
+        UserDefaults.standard.set(clamped, forKey: maxItemsKey)
+        evictExcess()
         saveHistory()
     }
 
@@ -266,6 +330,12 @@ final class ClipboardManager: ObservableObject {
 
     // MARK: - Persistence
 
+    private func loadMaxItems() {
+        if let stored = UserDefaults.standard.object(forKey: maxItemsKey) as? Int {
+            maxItems = min(max(stored, minMaxItems), maxMaxItems)
+        }
+    }
+
     private func saveHistory() {
         do {
             let data = try JSONEncoder().encode(history)
@@ -281,6 +351,8 @@ final class ClipboardManager: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: storageKey) {
             do {
                 history = try JSONDecoder().decode([ClipItem].self, from: data)
+                // Defensive: re-sort so pinned items lead, in case data got out of order.
+                normalizeOrder()
                 return
             } catch {
                 print("ClipStack: failed to load v2 history: \(error)")
@@ -291,6 +363,12 @@ final class ClipboardManager: ObservableObject {
         if let legacyData = UserDefaults.standard.data(forKey: legacyStorageKey) {
             migrateLegacyHistory(legacyData)
         }
+    }
+
+    private func normalizeOrder() {
+        let pinned = history.filter { $0.isPinned }
+        let unpinned = history.filter { !$0.isPinned }
+        history = pinned + unpinned
     }
 
     private func migrateLegacyHistory(_ data: Data) {
@@ -306,8 +384,6 @@ final class ClipboardManager: ObservableObject {
                 ClipItem(id: old.id, content: .text(old.text), copiedAt: old.copiedAt)
             }
             saveHistory()
-            // Keep the v1 key around for one release in case migration was wrong;
-            // remove on the next major version.
         } catch {
             print("ClipStack: failed to migrate v1 history: \(error)")
         }

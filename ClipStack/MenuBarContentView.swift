@@ -33,13 +33,24 @@ struct MenuBarContentView: View {
     }
 
     private var header: some View {
-        HStack {
+        let pinned = clipboardManager.history.filter { $0.isPinned }.count
+        let unpinned = clipboardManager.history.count - pinned
+
+        return HStack {
             Text("Clipboard History")
                 .font(.headline)
             Spacer()
-            Text("\(clipboardManager.history.count)/\(clipboardManager.maxItems)")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                if pinned > 0 {
+                    Image(systemName: "pin.fill")
+                        .font(.caption2)
+                    Text("\(pinned)")
+                    Text("·")
+                }
+                Text("\(unpinned)/\(clipboardManager.maxItems)")
+            }
+            .font(.caption)
+            .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -76,14 +87,27 @@ struct MenuBarContentView: View {
     }
 
     private var settings: some View {
-        Toggle(isOn: Binding(
-            get: { launchAtLogin.isEnabled },
-            set: { _ in launchAtLogin.toggle() }
-        )) {
-            Text("Launch at Login")
-                .font(.caption)
+        VStack(alignment: .leading, spacing: 6) {
+            Stepper(
+                value: Binding(
+                    get: { clipboardManager.maxItems },
+                    set: { clipboardManager.setMaxItems($0) }
+                ),
+                in: clipboardManager.minMaxItems...clipboardManager.maxMaxItems
+            ) {
+                Text("Keep last \(clipboardManager.maxItems) items")
+                    .font(.caption)
+            }
+
+            Toggle(isOn: Binding(
+                get: { launchAtLogin.isEnabled },
+                set: { _ in launchAtLogin.toggle() }
+            )) {
+                Text("Launch at Login")
+                    .font(.caption)
+            }
+            .toggleStyle(.checkbox)
         }
-        .toggleStyle(.checkbox)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
     }
@@ -135,7 +159,24 @@ struct HistoryRow: View {
 
                 contentView
 
+                // Static pinned indicator (only when pinned AND not hovering).
+                if item.isPinned && !isHovering {
+                    Image(systemName: "pin.fill")
+                        .font(.caption)
+                        .foregroundStyle(Color.accentColor)
+                }
+
+                // Hover controls — pin/unpin + remove.
                 if isHovering {
+                    Button {
+                        clipboardManager.togglePin(item)
+                    } label: {
+                        Image(systemName: item.isPinned ? "pin.slash.fill" : "pin")
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(item.isPinned ? "Unpin" : "Pin")
+
                     Button {
                         clipboardManager.remove(item)
                     } label: {
@@ -143,6 +184,7 @@ struct HistoryRow: View {
                             .foregroundStyle(.secondary)
                     }
                     .buttonStyle(.plain)
+                    .help("Remove")
                 }
             }
             .padding(.horizontal, 12)

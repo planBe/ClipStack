@@ -4,11 +4,12 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 
 ## Status
 
-🚧 **v0.3 — early development.** Core clipboard monitoring, menu bar UI, launch-at-login, and image + file support are in place. Global hotkey, search, and favorites are on the roadmap.
+🚧 **v0.4 — early development.** Core clipboard monitoring, menu bar UI, launch-at-login, image + file support, favorites, and configurable history size are in place. Global hotkey and search are on the roadmap.
 
 ## Features
 
-- 📋 Keeps the last 10 items you copied — text, images, or files
+- 📋 Keeps the last N items you copied — text, images, or files (default 10, configurable 5–50)
+- 📌 Pin items as favorites — pinned items never get evicted, even when the cap is exceeded
 - 🖼️ Image previews and file thumbnails in the menu
 - 🍎 Lives quietly in the menu bar (no dock icon)
 - 💾 History persists across launches; image data cached in the app sandbox container
@@ -46,11 +47,11 @@ Launch-at-login is implemented with `SMAppService.mainApp` (macOS 13+) — no he
 
 - [x] Launch at login (via `SMAppService.mainApp`) — shipped in v0.2
 - [x] Support for images and files, not just text — shipped in v0.3
-- [ ] When an image-file is copied, write both image data and file URL on round-trip so pasting into image-aware apps gets the image (not just the file reference)
+- [x] Configurable history size — shipped in v0.4
+- [x] Favorites that don't get evicted — shipped in v0.4
 - [ ] Global hotkey (⌘⇧V) to open the menu without the mouse
-- [ ] Configurable history size (currently fixed at 10)
 - [ ] Search within history
-- [ ] Optional "favorites" that don't get evicted
+- [ ] When an image-file is copied, write both image data and file URL on round-trip so pasting into image-aware apps gets the image (not just the file reference)
 - [ ] Notarized release build distributed via GitHub Releases and Homebrew Cask
 
 ## Privacy
