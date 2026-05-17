@@ -5,6 +5,28 @@ struct MenuBarContentView: View {
     @EnvironmentObject var clipboardManager: ClipboardManager
     @Environment(\.openURL) private var openURL
     @StateObject private var launchAtLogin = LaunchAtLoginManager.shared
+    @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
+
+    private var filteredHistory: [ClipItem] {
+        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !query.isEmpty else { return clipboardManager.history }
+        return clipboardManager.history.filter { item in
+            switch item.content {
+            case .text(let s):
+                return s.lowercased().contains(query)
+            case .file(_, let name):
+                return name.lowercased().contains(query)
+            case .image:
+                // Image items have no searchable text content; hide them while filtering.
+                return false
+            }
+        }
+    }
+
+    private var isSearching: Bool {
+        !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -15,7 +37,13 @@ struct MenuBarContentView: View {
             if clipboardManager.history.isEmpty {
                 emptyState
             } else {
-                historyList
+                searchField
+                Divider()
+                if isSearching && filteredHistory.isEmpty {
+                    noMatchesState
+                } else {
+                    historyList
+                }
             }
 
             Divider()
@@ -29,31 +57,84 @@ struct MenuBarContentView: View {
         .frame(width: 360)
         .onAppear {
             launchAtLogin.refreshStatus()
+            // Auto-focus search so ⌘⇧V → type-to-filter works without a click.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                isSearchFocused = true
+            }
         }
     }
 
     private var header: some View {
         let pinned = clipboardManager.history.filter { $0.isPinned }.count
         let unpinned = clipboardManager.history.count - pinned
+        let resultCount = filteredHistory.count
 
         return HStack {
             Text("Clipboard History")
                 .font(.headline)
             Spacer()
             HStack(spacing: 4) {
-                if pinned > 0 {
-                    Image(systemName: "pin.fill")
-                        .font(.caption2)
-                    Text("\(pinned)")
-                    Text("·")
+                if isSearching {
+                    Text(resultCount == 1 ? "1 result" : "\(resultCount) results")
+                } else {
+                    if pinned > 0 {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                        Text("\(pinned)")
+                        Text("·")
+                    }
+                    Text("\(unpinned)/\(clipboardManager.maxItems)")
                 }
-                Text("\(unpinned)/\(clipboardManager.maxItems)")
             }
             .font(.caption)
             .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+
+            TextField("Search", text: $searchText)
+                .textFieldStyle(.plain)
+                .focused($isSearchFocused)
+                .font(.body)
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Clear")
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
+    private var noMatchesState: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text("No matches")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text("Nothing in history matches \"\(searchText)\".")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 12)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
     }
 
     private var emptyState: some View {
@@ -73,11 +154,12 @@ struct MenuBarContentView: View {
     }
 
     private var historyList: some View {
-        ScrollView {
+        let items = filteredHistory
+        return ScrollView {
             LazyVStack(spacing: 0) {
-                ForEach(Array(clipboardManager.history.enumerated()), id: \.element.id) { index, item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     HistoryRow(item: item, index: index)
-                    if index < clipboardManager.history.count - 1 {
+                    if index < items.count - 1 {
                         Divider().padding(.leading, 36)
                     }
                 }
