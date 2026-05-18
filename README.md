@@ -9,7 +9,7 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 ## Features
 
 - 📋 Keeps the last N items you copied — text, images, or files (default 10, configurable 5–50)
-- 🔍 Search within history — auto-focuses when the menu opens; ⌘⇧V → type-to-filter
+- 🔍 Search within history — auto-focuses when the menu opens; ⌃⌘V → type-to-filter
 - ⌨️ Global hotkey **⌃⌘V** opens the menu from any app — fully keyboard-driven workflow
 - 📌 Pin items as favorites — pinned items never get evicted, even when the cap is exceeded
 - 🖼️ Image previews and file thumbnails in the menu
