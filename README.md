@@ -68,7 +68,7 @@ MIT. See [LICENSE](LICENSE).
 
 ## Contributing
 
-Issues and PRs welcome. The codebase is intentionally tiny — three Swift files — so it should be easy to dive in.
+Issues and PRs welcome. The codebase is intentionally tiny — around 720 lines of Swift across six files — so it should be easy to dive in.
 
 ## About
 
