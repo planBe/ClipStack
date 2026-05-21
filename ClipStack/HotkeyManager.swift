@@ -5,11 +5,14 @@ import Carbon.HIToolbox
 ///
 /// We use Carbon (long deprecated, still functional and the only public API
 /// for global hotkeys without Accessibility permission) so this app can stay
-/// dependency-free and sandbox-clean per D-002. The default binding is ⌃⌘V
-/// — chosen to avoid the common ⌘⇧V conflict with VS Code's
-/// "Markdown: Open Preview to the Side" and other apps' "Paste Without
-/// Formatting." Configurable binding is a future enhancement; for now this
-/// is a compile-time constant.
+/// dependency-free and sandbox-clean per D-002. The default binding is ⌥⇧⌘V
+/// — chosen to avoid the most common Cmd-V-adjacent conflicts: ⌘⇧V
+/// (VS Code's Markdown Preview, many editors' Paste Without Formatting)
+/// and ⌃⌘V (Terminal and other apps). ⌥⇧⌘V overlaps with the standard
+/// "Paste and Match Style" chord in TextEdit/Pages/Word, but ClipStack
+/// users in those apps generally want to paste something either way so
+/// the overlap resolves in users' favor. Configurable binding is queued
+/// for v1.1 per D-025; for now this is a compile-time constant.
 @MainActor
 final class HotkeyManager {
     typealias Handler = () -> Void
@@ -18,9 +21,9 @@ final class HotkeyManager {
     private var eventHandler: EventHandlerRef?
     private let handler: Handler
 
-    // ⌃⌘V — V is keycode 9, modifiers are control+cmd.
+    // ⌥⇧⌘V — V is keycode 9, modifiers are cmd+shift+option.
     private let keyCode: UInt32 = UInt32(kVK_ANSI_V)
-    private let modifiers: UInt32 = UInt32(controlKey | cmdKey)
+    private let modifiers: UInt32 = UInt32(cmdKey | shiftKey | optionKey)
     private let signature: OSType = OSType(0x434C5053) // 'CLPS'
     private let hotKeyID: UInt32 = 1
 
