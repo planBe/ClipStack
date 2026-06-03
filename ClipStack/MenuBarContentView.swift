@@ -57,7 +57,7 @@ struct MenuBarContentView: View {
         .frame(width: 360)
         .onAppear {
             launchAtLogin.refreshStatus()
-            // Auto-focus search so ⌥⇧⌘V → type-to-filter works without a click.
+            // Auto-focus search so ⌥⇧⌘P → type-to-filter works without a click.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
                 isSearchFocused = true
             }

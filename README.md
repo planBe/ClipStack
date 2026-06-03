@@ -9,8 +9,8 @@ A free, open-source clipboard history app for macOS. Lives in your menu bar and 
 ## Features
 
 - 📋 Keeps the last N items you copied — text, images, or files (default 10, configurable 5–50)
-- 🔍 Search within history — auto-focuses when the menu opens; ⌥⇧⌘V → type-to-filter
-- ⌨️ Global hotkey **⌥⇧⌘V** opens the menu from any app — fully keyboard-driven workflow (configurable hotkey queued for v1.1)
+- 🔍 Search within history — auto-focuses when the menu opens; ⌥⇧⌘P → type-to-filter
+- ⌨️ Global hotkey **⌥⇧⌘P** opens the menu from any app — fully keyboard-driven workflow (configurable hotkey queued for v1.1)
 - 📌 Pin items as favorites — pinned items never get evicted, even when the cap is exceeded
 - 🖼️ Image previews and file thumbnails in the menu
 - 🔄 Image files round-trip as image data — paste an image file from Finder into Pages/Mail/Safari and the image embeds inline
@@ -58,7 +58,7 @@ Clicking an item in the menu writes it back to the pasteboard. Text writes a str
 
 Launch-at-login is implemented with `SMAppService.mainApp` (macOS 13+) — no helper bundle, no additional entitlements under App Sandbox. The toggle state is also reflected by System Settings → General → Login Items, so changes you make there are picked up the next time you open the ClipStack menu.
 
-The global hotkey (⌥⇧⌘V) is registered via Carbon's `RegisterEventHotKey` — long deprecated but still the only public API that registers a system-wide hotkey without Accessibility permission, which keeps ClipStack sandbox-clean and friction-free. The chord was chosen to avoid the most common Cmd-V-adjacent conflicts: ⌘⇧V (VS Code's Markdown Preview, many editors' Paste Without Formatting) and ⌃⌘V (Terminal and other apps). ⌥⇧⌘V is the standard "Paste and Match Style" chord in TextEdit/Pages/Word — ClipStack users in those apps generally want to paste something either way, so the overlap resolves in users' favor. Configurable hotkey is queued for v1.1. The menu bar item is a manual `NSStatusItem` + `NSPopover` (not SwiftUI's `MenuBarExtra`) so the hotkey handler can programmatically open the popover.
+The global hotkey (⌥⇧⌘P, P for Paste) is registered via Carbon's `RegisterEventHotKey` — long deprecated but still the only public API that registers a system-wide hotkey without Accessibility permission, which keeps ClipStack sandbox-clean and friction-free. The chord was retuned across pre-release to dodge real-world conflicts: ⌘⇧V (VS Code's Markdown Preview, many editors' Paste Without Formatting), then ⌃⌘V (Terminal and other apps), then ⌥⇧⌘V — which turned out to be the system-wide "Paste and Match Style" chord (TextEdit/Pages/Mail and many others), so a *global* hotkey on it would intercept Paste-and-Match-Style for every user. The v1.0.1 default ⌥⇧⌘P is not bound to any system-standard action, and the full ⌥⇧⌘ modifier keeps it clear of plain ⌘V copy/paste. Configurable hotkey is queued for v1.1. The menu bar item is a manual `NSStatusItem` + `NSPopover` (not SwiftUI's `MenuBarExtra`) so the hotkey handler can programmatically open the popover.
 
 ## Roadmap
 
@@ -69,7 +69,8 @@ The global hotkey (⌥⇧⌘V) is registered via Carbon's `RegisterEventHotKey` 
 - [x] v0.6 — Search within history
 - [x] v0.7 — When an image-file is copied, write both image data and file URL on round-trip
 - [x] v1.0 — Notarized GitHub Release + submitted to Mac App Store (2026-05-21)
-- [ ] v1.1 — Configurable global hotkey (so users can pick their own chord instead of the hard-coded ⌥⇧⌘V default)
+- [x] v1.0.1 — Global hotkey default changed ⌥⇧⌘V → ⌥⇧⌘P (⌥⇧⌘V collided with the system "Paste and Match Style" chord)
+- [ ] v1.1 — Configurable global hotkey (so users can pick their own chord instead of the hard-coded ⌥⇧⌘P default)
 
 ## Privacy
 

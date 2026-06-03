@@ -43,7 +43,7 @@ ClipStack runs inside Apple's App Sandbox with **no network entitlements** and *
 - Store data in its own sandbox container (where the image cache and preferences live)
 - Read user-pasted file contents (when you click an image-file item from history, as described above)
 
-The global hotkey (⌥⇧⌘V) is registered via Carbon's `RegisterEventHotKey` API, which is sandbox-clean and does **not** require macOS Accessibility permission — ClipStack will never prompt you to grant accessibility access.
+The global hotkey (⌥⇧⌘P) is registered via Carbon's `RegisterEventHotKey` API, which is sandbox-clean and does **not** require macOS Accessibility permission — ClipStack will never prompt you to grant accessibility access.
 
 ## Children's privacy
 

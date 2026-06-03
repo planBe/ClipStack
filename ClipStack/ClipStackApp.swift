@@ -25,7 +25,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = StatusBarController(clipboardManager: clipboardManager)
         self.statusBarController = controller
 
-        // ⌥⇧⌘V opens the menu from anywhere.
+        // ⌥⇧⌘P opens the menu from anywhere.
         self.hotkeyManager = HotkeyManager { [weak controller] in
             controller?.togglePopover(nil)
         }

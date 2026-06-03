@@ -5,14 +5,15 @@ import Carbon.HIToolbox
 ///
 /// We use Carbon (long deprecated, still functional and the only public API
 /// for global hotkeys without Accessibility permission) so this app can stay
-/// dependency-free and sandbox-clean per D-002. The default binding is ⌥⇧⌘V
-/// — chosen to avoid the most common Cmd-V-adjacent conflicts: ⌘⇧V
-/// (VS Code's Markdown Preview, many editors' Paste Without Formatting)
-/// and ⌃⌘V (Terminal and other apps). ⌥⇧⌘V overlaps with the standard
-/// "Paste and Match Style" chord in TextEdit/Pages/Word, but ClipStack
-/// users in those apps generally want to paste something either way so
-/// the overlap resolves in users' favor. Configurable binding is queued
-/// for v1.1 per D-025; for now this is a compile-time constant.
+/// dependency-free and sandbox-clean per D-002. The default binding is ⌥⇧⌘P
+/// (P for Paste) — chosen after ⌥⇧⌘V proved to collide with the system-wide
+/// "Paste and Match Style" chord (TextEdit/Pages/Mail and many others), which
+/// a *global* hotkey would intercept for every user in every such app. Earlier
+/// chords ⌘⇧V (VS Code Markdown Preview / Paste Without Formatting) and ⌃⌘V
+/// (Terminal) were also rejected for conflicts. ⌥⇧⌘P is not bound to any
+/// system-standard action, and the full ⌥⇧⌘ modifier keeps it clear of plain
+/// ⌘V copy/paste. Configurable binding is queued for v1.1 per D-025; for now
+/// this is a compile-time constant (full chord history per D-035).
 @MainActor
 final class HotkeyManager {
     typealias Handler = () -> Void
@@ -21,8 +22,8 @@ final class HotkeyManager {
     private var eventHandler: EventHandlerRef?
     private let handler: Handler
 
-    // ⌥⇧⌘V — V is keycode 9, modifiers are cmd+shift+option.
-    private let keyCode: UInt32 = UInt32(kVK_ANSI_V)
+    // ⌥⇧⌘P — P is keycode 35, modifiers are cmd+shift+option.
+    private let keyCode: UInt32 = UInt32(kVK_ANSI_P)
     private let modifiers: UInt32 = UInt32(cmdKey | shiftKey | optionKey)
     private let signature: OSType = OSType(0x434C5053) // 'CLPS'
     private let hotKeyID: UInt32 = 1
